@@ -11,7 +11,6 @@ git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$
 
 mv ~/.zshrc ~/.zshrc.bak || true
 cp ./.zshrc ~/.zshrc 
-mv ~/.p10k.zsh ~/.p10k.zsh.bak || true
 cp ./.p10k.zsh ~/.p10k.zsh
 
 chsh -s $(which zsh)
