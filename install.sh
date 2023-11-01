@@ -10,6 +10,8 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:
 git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 
+ln -s /usr/bin/batcat /usr/bin/bat
+
 mv ~/.zshrc ~/.zshrc.bak || true
 cp ./.zshrc ~/.zshrc 
 cp ./.p10k.zsh ~/.p10k.zsh
@@ -19,4 +21,3 @@ mv ~/.tmux.conf ~/.tmux.conf.bac || true
 cp ./tmux.conf ~/.tmux.conf
 tmux
 tmux source ~/.tmux.conf
-exit
