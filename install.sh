@@ -13,6 +13,10 @@ git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 mv ~/.zshrc ~/.zshrc.bak || true
 cp ./.zshrc ~/.zshrc 
 cp ./.p10k.zsh ~/.p10k.zsh
-
 chsh -s $(which zsh)
+
+mv ~/.tmux.conf ~/.tmux.conf.bac || true
+cp ./tmux.conf ~/.tmux.conf
+tmux
 tmux source ~/.tmux.conf
+exit
