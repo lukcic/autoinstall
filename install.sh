@@ -1,6 +1,6 @@
 #!/bin/bash -u
 
-apt install git zsh vim tmux bat gh tldr -y
+apt install git curl zsh vim tmux bat gh tldr -y
 
 cd autoinstall
 
