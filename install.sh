@@ -19,5 +19,4 @@ chsh -s $(which zsh)
 
 mv ~/.tmux.conf ~/.tmux.conf.bac || true
 cp ./tmux.conf ~/.tmux.conf
-tmux
 tmux source ~/.tmux.conf
