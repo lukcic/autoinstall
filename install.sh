@@ -20,3 +20,14 @@ chsh -s $(which zsh)
 mv ~/.tmux.conf ~/.tmux.conf.bac || true
 cp ./tmux.conf ~/.tmux.conf
 tmux source ~/.tmux.conf
+
+#If you want tmux to start by default with every terminal you open, add this to your .bashrc.
+
+# if [[ -z "$TMUX" ]]; then
+#     ID=$(/usr/bin/tmux ls | grep -vm1 attached | cut -d: -f1)
+#     if [[ -z "${ID}" ]]; then
+#         /usr/bin/tmux new-session
+#     else
+#         /usr/bin/tmux attach-session -t "${ID}"
+#     fi
+# fi
