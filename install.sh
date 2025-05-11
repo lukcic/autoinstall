@@ -10,6 +10,7 @@ PACKAGES=(
     "tmux" \
     "bat" \
     "gh" \
+    "fontconfig"\
     "tldr")
 
 CONFIG_DIR="$(pwd)/config"
@@ -113,7 +114,6 @@ configure_zsh() {
 
 configure_tmux() {
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm || true > /dev/null
-    # tmux source ~/.tmux.conf
 }
 
 setup_aliases() {
@@ -128,7 +128,7 @@ setup_aliases() {
 
 configure_bat() {
     if ! command -v bat &> /dev/null; then
-        ln -s /usr/bin/batcat /usr/bin/bat
+        sudo ln -s /usr/bin/batcat /usr/bin/bat
     fi
 }
 
@@ -141,10 +141,10 @@ link_dotfiles() {
         target="$HOME/$(basename "$file")"
         if [[ -e "$target" ]]; then
             mkdir -p "$HOME/.config_backups"
-            mv "$target" "$HOME/.config_backups/$(basename "$target")"
-            ln -s "$file" "$target"
+            mv -n "$target" "$HOME/.config_backups/$(basename "$target")"
+            ln -sf "$file" "$target"
         else
-            ln -s "$file" "$target"
+            ln -sf "$file" "$target"
         fi
     done
     shopt -u dotglob
@@ -155,23 +155,11 @@ main() {
     configure_bat
     configure_zsh
     link_dotfiles
-    # chsh -s $(which zsh)
+    install_font
     setup_aliases
     configure_tmux
-    install_font
     exec zsh
+    chsh -s $(which zsh)
 }
 
-
 main "$@"
-
-#If you want tmux to start by default with every terminal you open, add this to your .bashrc.
-
-# if [[ -z "$TMUX" ]]; then
-#     ID=$(/usr/bin/tmux ls | grep -vm1 attached | cut -d: -f1)
-#     if [[ -z "${ID}" ]]; then
-#         /usr/bin/tmux new-session
-#     else
-#         /usr/bin/tmux attach-session -t "${ID}"
-#     fi
-# fi
