@@ -1,0 +1,9 @@
+alias g='git'
+alias gu='git add -u'
+alias gs='git status'
+alias gc='git commit --verbose'
+alias gl='git log --graph --all --oneline'
+
+alias tf='terraform'
+
+alias k='kubectl'
