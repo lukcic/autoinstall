@@ -1,9 +1,9 @@
 alias g='git'
 alias gu='git add -u'
-alias gs='git status'
-alias gc='git commit --verbose'
-alias gl='git log --graph --all --oneline'
+alias gc='git commit --verbose -m'
 
 alias tf='terraform'
 
 alias k='kubectl'
+alias kn='kubectl config set-context --current --namespace'
+alias kc='kubectl config set-context'
