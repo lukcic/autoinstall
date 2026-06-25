@@ -11,24 +11,38 @@ PACKAGES=(
     "bat" \
     "gh" \
     "fontconfig"\
-    "tldr")
+    "tldr" \
+    "stow" \
+    "fzf" \
+    "zoxide")
 
-CONFIG_DIR="$(pwd)/config"
 FONT_DIR="$(pwd)/font"
 
 install_packages() {
     echo "Installing packages..."
+
+    # Install package-by-package: package names differ across distros (e.g. tldr
+    # vs tealdeer) and a single missing candidate shouldn't abort the whole setup.
+    local pkg
+    local -a failed=()
 
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         echo "Linux detected. Installing packages using the appropriate package manager."
 
         if command -v apt &> /dev/null; then
             sudo apt update > /dev/null
-            sudo apt install -y "$@"
+            for pkg in "$@"; do
+                sudo apt install -y "$pkg" > /dev/null || failed+=("$pkg")
+            done
         elif command -v dnf &> /dev/null; then
-            sudo dnf install -y "$@"
+            for pkg in "$@"; do
+                sudo dnf install -y "$pkg" > /dev/null || failed+=("$pkg")
+            done
         elif command -v pacman &> /dev/null; then
-            sudo pacman -Syu --noconfirm "$@"
+            sudo pacman -Sy --noconfirm > /dev/null
+            for pkg in "$@"; do
+                sudo pacman -S --noconfirm --needed "$pkg" > /dev/null || failed+=("$pkg")
+            done
         else
             echo "Unsupported package manager. Please install the packages manually."
             exit 1
@@ -40,12 +54,17 @@ install_packages() {
             exit 1
         fi
         brew update > /dev/null
-        brew install "$@" > /dev/null
+        for pkg in "$@"; do
+            brew install "$pkg" > /dev/null || failed+=("$pkg")
+        done
     else
         echo "Unsupported OS. Please install the packages manually."
         exit 1
     fi
 
+    if (( ${#failed[@]} > 0 )); then
+        echo "⚠️  Could not install: ${failed[*]} — install manually if needed."
+    fi
 }
 
 install_font() {
@@ -105,61 +124,57 @@ configure_zsh() {
     export RUNZSH=no
     export CHSH=no
 
+    local zsh_custom="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}"
+
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended || true
-    git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions || true > /dev/null
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting || true > /dev/null
-    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k || true > /dev/null
-    echo 'POWERLEVEL9K_DISABLE_CONFIGURATION_WIZARD=false' >> ~/.zshrc
+    git clone https://github.com/zsh-users/zsh-autosuggestions "$zsh_custom/plugins/zsh-autosuggestions" || true
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$zsh_custom/plugins/zsh-syntax-highlighting" || true
+    git clone https://github.com/Aloxaf/fzf-tab "$zsh_custom/plugins/fzf-tab" || true
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$zsh_custom/themes/powerlevel10k" || true
+
+    # oh-my-zsh drops a template ~/.zshrc; configuration is owned by the dotfiles repo (GNU Stow).
+    # Move it out of the way so `stow .` can place its symlink without colliding.
+    if [[ -f "$HOME/.zshrc" && ! -L "$HOME/.zshrc" ]]; then
+        mkdir -p "$HOME/.config_backups"
+        mv -n "$HOME/.zshrc" "$HOME/.config_backups/.zshrc"
+    fi
 }
 
 configure_tmux() {
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm || true > /dev/null
 }
 
-setup_aliases() {
-    echo "Setting up custom aliases..."
-    cp "$CONFIG_DIR/.custom_aliases" "$HOME"/.config/.custom_aliases
-
-    if ! grep -q "source $HOME/.config/.custom_aliases" "$HOME/.zshrc"; then
-        echo -e "\n# Load custom aliases" >> "$HOME/.zshrc"
-        echo "source $HOME/.config/.custom_aliases" >> "$HOME"/.zshrc
-    fi
-}
-
 configure_bat() {
+    # On Debian/Ubuntu the binary is installed as `batcat` (name clash with an
+    # unrelated `bat` package), so expose it under the expected `bat` name.
     if ! command -v bat &> /dev/null; then
         sudo ln -s /usr/bin/batcat /usr/bin/bat
     fi
 }
 
-link_dotfiles() {
-    mkdir -p "$HOME"/.config
-    cp -r "$CONFIG_DIR"/ "$HOME"/.config/
-
-    shopt -s dotglob # required to include hidden files
-    for file in "$HOME"/.config/*; do
-        target="$HOME/$(basename "$file")"
-        if [[ -e "$target" ]]; then
-            mkdir -p "$HOME/.config_backups"
-            mv -n "$target" "$HOME/.config_backups/$(basename "$target")"
-            ln -sf "$file" "$target"
-        else
-            ln -sf "$file" "$target"
-        fi
-    done
-    shopt -u dotglob
-}
-
 main() {
     install_packages "${PACKAGES[@]}"
     configure_bat
-    configure_zsh
-    link_dotfiles
     install_font
-    setup_aliases
+    configure_zsh
     configure_tmux
-    exec zsh
-    chsh -s $(which zsh)
+
+    # Set zsh as the default login shell (no exec — let the script finish first).
+    if [[ "$SHELL" != *zsh ]]; then
+        chsh -s "$(which zsh)" || echo "⚠️  Could not change default shell; run 'chsh -s $(which zsh)' manually."
+    fi
+
+    cat <<'EOF'
+
+✅ System setup complete.
+
+Next step — apply your configuration with GNU Stow (explicit --target is
+required because the repo lives under ~/projects, not directly in $HOME):
+
+    cd ~/projects/dotfiles && stow -t "$HOME" --no-folding .
+
+Then open a new terminal (or run 'zsh') to load the configured shell.
+EOF
 }
 
 main "$@"
